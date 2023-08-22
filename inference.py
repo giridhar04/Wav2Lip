@@ -92,6 +92,10 @@ def face_detect(images):
 			y2 = min(image.shape[0], rect[3] + pady2)
 			x1 = max(0, rect[0] - padx1)
 			x2 = min(image.shape[1], rect[2] + padx2)
+			results.append([x1, y1, x2, y2])
+		else:
+			results.append([])
+
 			
 		# if rect is None:
 		# 	cv2.imwrite('temp/faulty_frame.jpg', image) # check this frame where the face was not detected.
@@ -102,12 +106,14 @@ def face_detect(images):
 		# x1 = max(0, rect[0] - padx1)
 		# x2 = min(image.shape[1], rect[2] + padx2)
 		
-		results.append([x1, y1, x2, y2])
+		# results.append([x1, y1, x2, y2])
 
 	boxes = np.array(results)
 	if not args.nosmooth: boxes = get_smoothened_boxes(boxes, T=5)
 	results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
+	for image, (x1, y1, x2, y2) in zip(images, boxes):
+		
 	del detector
 	return results 
 
@@ -131,7 +137,10 @@ def datagen(frames, mels):
 
 		face = cv2.resize(face, (args.img_size, args.img_size))
 			
-		img_batch.append(face)
+		if len(coords) == 0:
+			img_batch.append(np.random.rand(96,96,3))
+		else:
+			img_batch.append(face)
 		mel_batch.append(m)
 		frame_batch.append(frame_to_save)
 		coords_batch.append(coords)
@@ -271,10 +280,11 @@ def main():
 		pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
 		
 		for p, f, c in zip(pred, frames, coords):
-			y1, y2, x1, x2 = c
-			p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
-
-			f[y1:y2, x1:x2] = p
+			if len(coords) != 0:
+				y1, y2, x1, x2 = c
+				p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
+	
+				f[y1:y2, x1:x2] = p
 			out.write(f)
 
 	out.release()
