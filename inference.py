@@ -113,10 +113,11 @@ def face_detect(images):
 	results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
 	for image, (x1, y1, x2, y2) in zip(images, boxes):
-		if x1==y1 and y1 == x2 and x2 ==y2:
-			results.append([image[y1: y2, x1:x2], (y1, y2, x1, x2)])
+		if (x1==0) and (x1==y1) and (y1 == x2) and (x2 == y2) :
+			results.append([image, ()])	
 		else:
-			results.append([image, ()])
+			results.append([image[y1: y2, x1:x2], (y1, y2, x1, x2)])
+			
 		
 	del detector
 	return results 
@@ -141,9 +142,10 @@ def datagen(frames, mels):
 
 		
 			
-		if len(coords) == 0:
+		if (coords[0]==0) and (coords[0]==coords[1]) and (coords[1]==coords[2]) and (coords[2]==coords[3]):
 			img_batch.append(np.random.rand(96,96,3))
 		else:
+			# print(coords, "------", len(coords))
 			face = cv2.resize(face, (args.img_size, args.img_size))
 			img_batch.append(face)
 		mel_batch.append(m)
@@ -285,12 +287,15 @@ def main():
 		pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
 		
 		for p, f, c in zip(pred, frames, coords):
-			if len(coords) != 0:
+			if (c[0]==0) and (c[0]==c[1]) and (c[1]==c[2]) and (c[2]==c[3]):
+				out.write(f)
+			else:
+				# print(c)
 				y1, y2, x1, x2 = c
 				p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
-	
+		
 				f[y1:y2, x1:x2] = p
-			out.write(f)
+				out.write(f)
 
 	out.release()
 
