@@ -94,7 +94,7 @@ def face_detect(images):
 			x2 = min(image.shape[1], rect[2] + padx2)
 			results.append([x1, y1, x2, y2])
 		else:
-			results.append([])
+			results.append([0,0,0,0])
 
 			
 		# if rect is None:
@@ -112,7 +112,11 @@ def face_detect(images):
 	if not args.nosmooth: boxes = get_smoothened_boxes(boxes, T=5)
 	results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
-	# for image, (x1, y1, x2, y2) in zip(images, boxes):
+	for image, (x1, y1, x2, y2) in zip(images, boxes):
+		if x1==y1 and y1 == x2 and x2 ==y2:
+			results.append([image[y1: y2, x1:x2], (y1, y2, x1, x2)])
+		else:
+			results.append([image, ()])
 		
 	del detector
 	return results 
@@ -135,11 +139,12 @@ def datagen(frames, mels):
 		frame_to_save = frames[idx].copy()
 		face, coords = face_det_results[idx].copy()
 
-		face = cv2.resize(face, (args.img_size, args.img_size))
+		
 			
 		if len(coords) == 0:
 			img_batch.append(np.random.rand(96,96,3))
 		else:
+			face = cv2.resize(face, (args.img_size, args.img_size))
 			img_batch.append(face)
 		mel_batch.append(m)
 		frame_batch.append(frame_to_save)
