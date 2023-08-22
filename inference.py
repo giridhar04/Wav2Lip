@@ -58,6 +58,9 @@ if os.path.isfile(args.face) and args.face.split('.')[1] in ['jpg', 'png', 'jpeg
 
 def get_smoothened_boxes(boxes, T):
 	for i in range(len(boxes)):
+		if boxes[i][0] == 0 and boxes[i][0] == boxes[i][1] and boxes[i][1]==boxes[i][2] and boxes[i][2]==boxes[i][3]:
+			continue
+			
 		if i + T > len(boxes):
 			window = boxes[len(boxes) - T:]
 		else:
@@ -99,15 +102,14 @@ def face_detect(images):
 			
 	boxes = np.array(results)
 	if not args.nosmooth: boxes = get_smoothened_boxes(boxes, T=5)
-	# results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
+	# results = [ [image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
+	results = []
 	for image, (x1, y1, x2, y2) in zip(images, boxes):
 		if (x1==0) and (x1==y1) and (y1 == x2) and (x2 == y2) :
 			results.append([image, ()])	
 		else:
 			results.append([image[y1: y2, x1:x2], (y1, y2, x1, x2)])
-			
-		
 	del detector
 	return results 
 
@@ -124,14 +126,18 @@ def datagen(frames, mels):
 		y1, y2, x1, x2 = args.box
 		face_det_results = [[f[y1: y2, x1:x2], (y1, y2, x1, x2)] for f in frames]
 
+	# print(face_det_results)
+	# exit()
 	for i, m in enumerate(mels):
 		idx = 0 if args.static else i%len(frames)
 		frame_to_save = frames[idx].copy()
+		# print("Hello")
+		# print(face_det_results[idx])
 		face, coords = face_det_results[idx].copy()
 
 		
 			
-		if (coords[0]==0) and (coords[0]==coords[1]) and (coords[1]==coords[2]) and (coords[2]==coords[3]):
+		if len(coords)==0:
 			img_batch.append(np.random.rand(96,96,3))
 		else:
 			# print(coords, "------", len(coords))
@@ -276,7 +282,7 @@ def main():
 		pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
 		
 		for p, f, c in zip(pred, frames, coords):
-			if (c[0]==0) and (c[0]==c[1]) and (c[1]==c[2]) and (c[2]==c[3]):
+			if len(c) == 0:
 				out.write(f)
 			else:
 				# print(c)
